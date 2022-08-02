@@ -8,6 +8,7 @@
  */
 #include "includes.h"
 #include <cstring>
+#include <algorithm>
 
 /**
  *  Set up namespace
@@ -1170,7 +1171,9 @@ void ClassImpl::destructObject(zend_object *object)
     }
     catch (const NotImplemented &exception)
     {
-        // fallback on the default destructor call
+        // fallback on the default destructor call in case a derived object
+        // of Base throws this. The default implementation will call this
+        // function in any case.
         zend_objects_destroy_object(object);
     }
     catch (Throwable &throwable)
@@ -1339,6 +1342,19 @@ int ClassImpl::unserialize(zval *object, zend_class_entry *entry, const unsigned
 }
 
 /**
+ *  Helper method to check if a function is registered for this instance
+ *  @param name         name of the function to check for
+ *  @return bool        Wether the function exists or not
+ */
+bool ClassImpl::hasMethod(const char* name) const
+{
+    // find the method
+    auto result = std::find_if(_methods.begin(), _methods.end(), [name](std::shared_ptr<Method> method){ return method->name() == name; });
+    // return wether its found or not
+    return result != _methods.end();
+}
+
+/**
  *  Retrieve an array of zend_function_entry objects that hold the
  *  properties for each method. This method is called at extension
  *  startup time to register all methods.
@@ -1351,8 +1367,22 @@ const struct _zend_function_entry *ClassImpl::entries()
     // already initialized?
     if (_entries) return _entries;
 
+    // the number of entries that need to be allocated
+    size_t entrycount = _methods.size();
+
+    // if the class is countable, we might need some extra methods
+    if (_base->countable() && !hasMethod("count")) entrycount += 1;
+
+    // if the class is serializable, we might need some extra methods
+    if (_base->serializable())
+    {
+        // add the serialize method if the class does not have one defined yet
+        if (!hasMethod("serialize")) entrycount += 1;
+        if (!hasMethod("unserialize")) entrycount += 1;
+    }
+
     // allocate memory for the functions
-    _entries = new zend_function_entry[_methods.size() + 1];
+    _entries = new zend_function_entry[entrycount + 1];
 
     // keep iterator counter
     int i = 0;
@@ -1365,6 +1395,30 @@ const struct _zend_function_entry *ClassImpl::entries()
 
         // let the function fill the entry
         method->initialize(entry, _name);
+    }
+
+    // if the class is countable, we might need to add some extra methods
+    if (_base->countable())
+    {
+        // the method objectneed to stay in scope for the lifetime of the script (because the register a pointer
+        // to an internal string buffer) -- so we create them as static variables
+        static Method count("count", &Base::__count, 0, {});
+
+        // register the serialize and unserialize method in case this was not yet done in PHP user space
+        if (!hasMethod("count")) count.initialize(&_entries[i++], _name);
+    }
+
+    // if the class is serializable, we might need some extra methods
+    if (_base->serializable())
+    {
+        // the method objectneed to stay in scope for the lifetime of the script (because the register a pointer
+        // to an internal string buffer) -- so we create them as static variables
+        static Method serialize("serialize", &Base::__serialize, 0, {});
+        static Method unserialize("unserialize", &Base::__unserialize, 0, { ByVal("input", Type::Undefined, true) });
+
+        // register the serialize and unserialize method in case this was not yet done in PHP user space
+        if (!hasMethod("serialize")) serialize.initialize(&_entries[i++], _name);
+        if (!hasMethod("unserialize")) unserialize.initialize(&_entries[i++], _name);
     }
 
     // last entry should be set to all zeros
@@ -1404,8 +1458,11 @@ zend_class_entry *ClassImpl::initialize(ClassBase *base, const std::string &pref
     // initialize the class entry
     INIT_CLASS_ENTRY_EX(entry, _name.c_str(), _name.size(), entries());
 
-    // we need a special constructor
-    entry.create_object = &ClassImpl::createObject;
+    // we need a special constructor, but only for real classes, not for interfaces.
+    // (in fact: from php 7.4 onwards the create_object method is part of union 
+    // together with the interface_gets_implemented method, which causes a crash
+    // when the create_object property is set for an interface)
+    if (_type != ClassType::Interface) entry.create_object = &ClassImpl::createObject;
 
     // register function that is called for static method calls
     entry.get_static_method = &ClassImpl::getStaticMethod;
@@ -1456,8 +1513,8 @@ zend_class_entry *ClassImpl::initialize(ClassBase *base, const std::string &pref
         // register the class
         _entry = zend_register_internal_class(&entry);
     }
-
-    // register the classes
+    
+    // register the interfaces
     for (auto &interface : _interfaces)
     {
         // register this interface
@@ -1470,6 +1527,9 @@ zend_class_entry *ClassImpl::initialize(ClassBase *base, const std::string &pref
     // we may have to expose the Traversable or Serializable interfaces
     if (_base->traversable()) zend_class_implements(_entry, 1, zend_ce_traversable);    
     if (_base->serializable()) zend_class_implements(_entry, 1, zend_ce_serializable);    
+
+    // instal the right modifier (to make the class an interface, abstract class, etc)
+    _entry->ce_flags |= uint64_t(_type);
 
     // this pointer has to be copied to temporary pointer, as &this causes compiler error
     ClassImpl *impl = this;
@@ -1486,13 +1546,6 @@ zend_class_entry *ClassImpl::initialize(ClassBase *base, const std::string &pref
 
     // install the doc_comment
     _entry->info.user.doc_comment = _self;
-
-    // set access types flags for class
-#if PHP_VERSION_ID >= 70400
-    _entry->ce_flags |= (int)_type;
-#else
-    _entry->ce_flags = (int)_type;
-#endif
 
     // declare all member variables
     for (auto &member : _members) member->initialize(_entry);

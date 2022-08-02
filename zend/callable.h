@@ -125,6 +125,11 @@ public:
      */
     void initialize(zend_internal_function_info *info, const char *classname = nullptr) const;
 
+    /**
+     *  Name of the function
+     *  @return const std::string&
+     */
+    const std::string &name() const { return _name; }
 
 protected:
 
