@@ -851,7 +851,9 @@ bool Value::isCallable(const char *name)
     if (!(func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)) return true;
 
     // check the result ("Returns true to the fake Closure's __invoke")
-    bool result = func->common.scope == zend_ce_closure && zend_string_equals_literal(methodname.value(), ZEND_INVOKE_FUNC_NAME);
+    //bool result = func->common.scope == zend_ce_closure && zend_string_equals_literal(methodname.value(), ZEND_INVOKE_FUNC_NAME);
+    // 8.2 change
+    bool result = func->common.scope == zend_ce_closure && zend_string_equals_cstr(methodname.value(), ZEND_INVOKE_FUNC_NAME, ::strlen(ZEND_INVOKE_FUNC_NAME));
 
     // free resources (still don't get this code, copied from zend_builtin_functions.c)
     zend_string_release(func->common.function_name);

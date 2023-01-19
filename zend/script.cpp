@@ -40,7 +40,7 @@ zend_op_array *Script::compile(const char *name, const char *phpcode, size_t siz
 #if PHP_VERSION_ID < 80000
     return zend_compile_string(source._val, (char *)name);
 #else
-    return zend_compile_string(zval_get_string(source._val), (char*)name);
+    return zend_compile_string(zval_get_string(source._val), (char*)name, ZEND_COMPILE_POSITION_AFTER_OPEN_TAG);
 #endif
 }
 

@@ -35,7 +35,9 @@ void Callable::invoke(INTERNAL_FUNCTION_PARAMETERS)
     Callable *callable = reinterpret_cast<Callable*>(info[argc].class_name);
 #else
     // Sanity check
-    assert(info[argc].type != 0 && info[argc].name == nullptr);
+    //assert(info[argc].type != 0 && info[argc].name == nullptr);
+    // 8.2 change
+    assert(ZEND_TYPE_IS_SET(info[argc].type) && info[argc].name == nullptr);
     // the callable we are retrieving
 #if PHP_VERSION_ID < 80000
     Callable *callable = reinterpret_cast<Callable*>(info[argc].type);
@@ -106,6 +108,9 @@ void Callable::initialize(zend_function_entry *entry, const char *classname, int
         //          is incorrect in their view. another place to put this may be
         //          hiding it behind the fname
        // _argv[_argc + 1].type = reinterpret_cast<zend_type>(this);
+
+        // 8.2 change
+        _argv[_argc + 1].type = ZEND_TYPE_INIT_PTR(this, IS_PTR, true, 0);
 #endif
 
         // we use our own invoke method, which does a lookup

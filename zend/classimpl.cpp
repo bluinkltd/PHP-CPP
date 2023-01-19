@@ -285,7 +285,7 @@ zend_function *ClassImpl::getStaticMethod(zend_class_entry *entry, zend_string *
  *  @param  object_ptr
  *  @return int
  */
-int ClassImpl::getClosure(ZEND_OBJECT_OR_ZVAL object, zend_class_entry **entry_ptr, zend_function **func, zend_object **object_ptr, zend_bool check_only)
+zend_result ClassImpl::getClosure(ZEND_OBJECT_OR_ZVAL object, zend_class_entry **entry_ptr, zend_function **func, zend_object **object_ptr, zend_bool check_only)
 {
     // it is really unbelievable how the Zend engine manages to implement every feature
     // in a complete different manner. You would expect the __invoke() and the
@@ -467,7 +467,7 @@ int ClassImpl::compare(zval *val1, zval *val2)
  *  @param  type
  *  @return int
  */
-int ClassImpl::cast(ZEND_OBJECT_OR_ZVAL val, zval *retval, int type)
+zend_result ClassImpl::cast(ZEND_OBJECT_OR_ZVAL val, zval *retval, int type)
 {
     // get the base c++ object
     Base *object = ObjectImpl::find(val)->object();
@@ -579,7 +579,7 @@ zend_object *ClassImpl::cloneObject(ZEND_OBJECT_OR_ZVAL val)
  *  @param  count
  *  @return int
  */
-int ClassImpl::countElements(ZEND_OBJECT_OR_ZVAL object, zend_long *count)
+zend_result ClassImpl::countElements(ZEND_OBJECT_OR_ZVAL object, zend_long *count)
 {
     // does it implement the countable interface?
     Countable *countable = dynamic_cast<Countable*>(ObjectImpl::find(object)->object());

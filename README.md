@@ -1,6 +1,16 @@
 PHP-CPP
 =======
 
+PHP 8.1 / 8.2
+=======
+
+Be sure to use php81 branch. (also supports 8.2)
+
+Got changes from [here](https://github.com/NobletSolutions/PHP-CPP) for php8.1 support.
+
+Got changes from [here](https://github.com/baronbiosys/PHP-CPP) for php8.2 patches. Specifically [this](https://github.com/baronbiosys/PHP-CPP/commit/58c1d78c62b431acc6caea845ff00a8efeb22746) patch set.
+
+
 [![Build Status](https://travis-ci.org/CopernicaMarketingSoftware/PHP-CPP.svg?branch=master)](https://travis-ci.org/CopernicaMarketingSoftware/PHP-CPP)
 
 The PHP-CPP library is a C++ library for developing PHP extensions. It offers a collection
