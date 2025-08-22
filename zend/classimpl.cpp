@@ -23,8 +23,11 @@ ClassImpl::~ClassImpl()
     // destruct the entries
     delete[] _entries;
 
+    // PHP 8.4 frees doc_comment if not null, so skip.
+#if PHP_VERSION_ID < 80400
     // free the stored pointer
     if (_self) zend_string_release(_self);
+#endif
 }
 
 /**
@@ -56,14 +59,22 @@ static ClassImpl *self(zend_class_entry *entry)
      *  the string, in case PHP tries to read it) and after that the pointer
      *  and we leave the doc_comment_len at 0.
      */
+#if PHP_VERSION_ID < 80400
     while (entry->parent && (entry->info.user.doc_comment == nullptr || ZSTR_LEN(entry->info.user.doc_comment) > 0))
+#else
+    while (entry->parent && (entry->doc_comment == nullptr || ZSTR_LEN(entry->doc_comment) > 0))
+#endif
     {
         // we did not create this class entry, but luckily we have a parent
         entry = entry->parent;
     }
 
     // retrieve the comment (it has a pointer hidden in it to the ClassBase object)
+#if PHP_VERSION_ID < 80400
     const char *comment = ZSTR_VAL(entry->info.user.doc_comment);
+#else
+    const char *comment = ZSTR_VAL(entry->doc_comment);
+#endif
 
     // the first byte of the comment is an empty string (null character), but
     // the next bytes contain a pointer to the ClassBase class
@@ -214,6 +225,9 @@ zend_function *ClassImpl::getMethod(zend_object **object, zend_string *method, c
     auto *data = (CallData *)emalloc(sizeof(CallData));
     auto *function = &data->func;
 
+    // reset everything to zero (in case future PHP versions add more fields)
+    memset(function, 0, sizeof(*function));
+
     // set all properties
     function->type              = ZEND_INTERNAL_FUNCTION;
     function->arg_flags[0]      = 0;
@@ -257,6 +271,9 @@ zend_function *ClassImpl::getStaticMethod(zend_class_entry *entry, zend_string *
     // allocate data holding information about the function
     auto *data = (CallData *)emalloc(sizeof(CallData));
     auto *function = &data->func;
+
+    // reset everything to zero (in case future PHP versions add more fields)
+    memset(function, 0, sizeof(*function));
 
     // set all properties for the function
     function->type              = ZEND_INTERNAL_FUNCTION;
@@ -307,6 +324,9 @@ zend_result ClassImpl::getClosure(ZEND_OBJECT_OR_ZVAL object, zend_class_entry *
     // with all information about the function
     auto *data = (CallData *)emalloc(sizeof(CallData));
     auto *function = &data->func;
+
+    // reset everything to zero (in case future PHP versions add more fields)
+    memset(function, 0, sizeof(*function));
 
     // we're going to set all properties of the zend_internal_function struct
     function->type              = ZEND_INTERNAL_FUNCTION;
@@ -1604,7 +1624,11 @@ zend_class_entry *ClassImpl::initialize(ClassBase *base, const std::string &pref
     std::memcpy(ZSTR_VAL(_self) + 1, &impl, sizeof(impl));
 
     // install the doc_comment
+#if PHP_VERSION_ID < 80400
     _entry->info.user.doc_comment = _self;
+#else
+    _entry->doc_comment = _self;
+#endif
 
     // declare all member variables
     for (auto &member : _members) member->initialize(_entry);
