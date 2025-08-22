@@ -227,6 +227,7 @@ public:
     Class<T> &property(const char *name, const char *value,        int flags = Public) { ClassBase::property(name, value, flags); return *this; }
     Class<T> &property(const char *name, const std::string &value, int flags = Public) { ClassBase::property(name, value, flags); return *this; }
     Class<T> &property(const char *name, bool value,               int flags = Public) { ClassBase::property(name, value, flags); return *this; }
+    Class<T> &property(const char *name, const void *value,        int flags = Public) = delete;
     Class<T> &property(const char *name, double value,             int flags = Public) { ClassBase::property(name, value, flags); return *this; }
 
     /**
@@ -403,6 +404,16 @@ private:
     {
         // check if the templated class overrides from the Serializable class
         return std::is_base_of<Serializable,T>::value;
+    }
+
+    /**
+     *  Is this a countable class?
+     *  @return bool
+     */
+    virtual bool countable() const override
+    {
+        // check if the templated class overrides from the Countable class
+        return std::is_base_of<Countable,T>::value;
     }
 
     /**

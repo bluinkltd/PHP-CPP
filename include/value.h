@@ -15,7 +15,7 @@
  *  this class.
  *
  *  @author Emiel Bruijntjes <emiel.bruijntjes@copernica.com>
- *  @copyright 2013 - 2019 Copernica BV
+ *  @copyright 2013 - 2024 Copernica BV
  */
 
 /**
@@ -56,9 +56,11 @@ public:
     Value(int32_t value);
     Value(int64_t value);
     Value(bool value);
+    Value(const void *value) = delete;
     Value(char value);
     Value(const std::string &value);
     Value(const char *value, int size = -1);
+    Value(struct _zend_string *value);
     Value(double value);
     Value(const IniValue &value);
 
@@ -174,6 +176,7 @@ public:
     Value &operator=(int32_t value);
     Value &operator=(int64_t value);
     Value &operator=(bool value);
+    Value &operator=(const void *value) = delete;
     Value &operator=(char value);
     Value &operator=(const std::string &value);
     Value &operator=(const char *value);
@@ -191,6 +194,7 @@ public:
     Value &operator+=(int32_t value);
     Value &operator+=(int64_t value);
     Value &operator+=(bool value);
+    Value &operator+=(const void *value) = delete;
     Value &operator+=(char value);
     Value &operator+=(const std::string &value);
     Value &operator+=(const char *value);
@@ -206,6 +210,7 @@ public:
     Value &operator-=(int32_t value);
     Value &operator-=(int64_t value);
     Value &operator-=(bool value);
+    Value &operator-=(const void *value) = delete;
     Value &operator-=(char value);
     Value &operator-=(const std::string &value);
     Value &operator-=(const char *value);
@@ -221,6 +226,7 @@ public:
     Value &operator*=(int32_t value);
     Value &operator*=(int64_t value);
     Value &operator*=(bool value);
+    Value &operator*=(const void *value) = delete;
     Value &operator*=(char value);
     Value &operator*=(const std::string &value);
     Value &operator*=(const char *value);
@@ -236,6 +242,7 @@ public:
     Value &operator/=(int32_t value);
     Value &operator/=(int64_t value);
     Value &operator/=(bool value);
+    Value &operator/=(const void *value) = delete;
     Value &operator/=(char value);
     Value &operator/=(const std::string &value);
     Value &operator/=(const char *value);
@@ -251,6 +258,7 @@ public:
     Value &operator%=(int32_t value);
     Value &operator%=(int64_t value);
     Value &operator%=(bool value);
+    Value &operator%=(const void *value) = delete;
     Value &operator%=(char value);
     Value &operator%=(const std::string &value);
     Value &operator%=(const char *value);
@@ -266,6 +274,7 @@ public:
     Value operator+(int32_t value);
     Value operator+(int64_t value);
     Value operator+(bool value);
+    Value operator+(const void *value) = delete;
     Value operator+(char value);
     Value operator+(const std::string &value);
     Value operator+(const char *value);
@@ -281,6 +290,7 @@ public:
     Value operator-(int32_t value);
     Value operator-(int64_t value);
     Value operator-(bool value);
+    Value operator-(const void *value) = delete;
     Value operator-(char value);
     Value operator-(const std::string &value);
     Value operator-(const char *value);
@@ -296,6 +306,7 @@ public:
     Value operator*(int32_t value);
     Value operator*(int64_t value);
     Value operator*(bool value);
+    Value operator*(const void *value) = delete;
     Value operator*(char value);
     Value operator*(const std::string &value);
     Value operator*(const char *value);
@@ -311,6 +322,7 @@ public:
     Value operator/(int32_t value);
     Value operator/(int64_t value);
     Value operator/(bool value);
+    Value operator/(const void *value) = delete;
     Value operator/(char value);
     Value operator/(const std::string &value);
     Value operator/(const char *value);
@@ -326,6 +338,7 @@ public:
     Value operator%(int32_t value);
     Value operator%(int64_t value);
     Value operator%(bool value);
+    Value operator%(const void *value) = delete;
     Value operator%(char value);
     Value operator%(const std::string &value);
     Value operator%(const char *value);
@@ -333,14 +346,18 @@ public:
 
     /**
      *  Comparison operators for hardcoded strings
+     *
+     *  Note that this works only for string values,
+     *  other values segfaults!
+     *
      *  @param  value
      */
-    bool operator==(const char *value) const { return ::strcmp(rawValue(), value) == 0; }
-    bool operator!=(const char *value) const { return ::strcmp(rawValue(), value) != 0; }
-    bool operator<=(const char *value) const { return ::strcmp(rawValue(), value) <= 0; }
-    bool operator>=(const char *value) const { return ::strcmp(rawValue(), value) >= 0; }
-    bool operator< (const char *value) const { return ::strcmp(rawValue(), value) <  0; }
-    bool operator> (const char *value) const { return ::strcmp(rawValue(), value) >  0; }
+    bool operator==(const char *value) const { return strcmp(value) == 0; }
+    bool operator!=(const char *value) const { return strcmp(value) != 0; }
+    bool operator<=(const char *value) const { return strcmp(value) <= 0; }
+    bool operator>=(const char *value) const { return strcmp(value) >= 0; }
+    bool operator< (const char *value) const { return strcmp(value) <  0; }
+    bool operator> (const char *value) const { return strcmp(value) >  0; }
 
     /**
      *  Comparison operators for hardcoded Value
@@ -423,6 +440,13 @@ public:
      *  @return const char *
      */
     const char *rawValue() const;
+
+    /**
+     *  Helper function for string comparison
+     *  @param  value
+     *  @return int
+     */
+    int strcmp(const char *value) const;
 
     /**
      *  Retrieve the value as number
@@ -1109,7 +1133,7 @@ private:
      *  @param  argv        The parameters
      *  @return Value
      */
-    Value exec(int argc, Value *argv) const;
+    Value exec(int argc, Value argv[]) const;
 
     /**
      *  Call method with a number of parameters
@@ -1118,8 +1142,8 @@ private:
      *  @param  argv        The parameters
      *  @return Value
      */
-    Value exec(const char *name, int argc, Value *argv) const;
-    Value exec(const char *name, int argc, Value *argv);
+    Value exec(const char *name, int argc, Value argv[]) const;
+    Value exec(const char *name, int argc, Value argv[]);
 
     /**
      *  Refcount - the number of references to the value
@@ -1218,6 +1242,7 @@ protected:
     friend class Script;
     friend class ConstantImpl;
     friend class Stream;
+    friend class ExecArguments;
 
     /**
      *  Friend functions which have to access that zval directly

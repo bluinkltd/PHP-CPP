@@ -35,9 +35,15 @@ zend_op_array *Script::compile(const char *name, const char *phpcode, size_t siz
 
     // remember the old compiler options, and set new compiler options
     CompilerOptions options(ZEND_COMPILE_DEFAULT_FOR_EVAL);
-    
+
     // compile the string
+#if PHP_VERSION_ID < 80000
     return zend_compile_string(source._val, (char *)name);
+#elif PHP_VERSION_ID < 80200
+    return zend_compile_string(zval_get_string(source._val), (char*)name);
+#else
+    return zend_compile_string(zval_get_string(source._val), (char*)name, ZEND_COMPILE_POSITION_AT_OPEN_TAG);
+#endif
 }
 
 /**
@@ -80,7 +86,7 @@ Value Script::execute() const
 {
     // pass on to opcodes
     if (!_opcodes) return nullptr;
-    
+
     // execute opcodes
     return _opcodes->execute();
 }

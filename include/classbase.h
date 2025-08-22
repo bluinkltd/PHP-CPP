@@ -124,6 +124,7 @@ public:
      */
     virtual bool traversable()  const { return false; }
     virtual bool serializable() const { return false; }
+    virtual bool countable()    const { return false; }
     virtual bool clonable()     const { return false; }
 
     /**
@@ -272,6 +273,7 @@ protected:
     void property(const char *name, int32_t value, int flags = Php::Public);
     void property(const char *name, int64_t value, int flags = Php::Public);
     void property(const char *name, bool value, int flags = Php::Public);
+    void property(const char *name, const void *value, int flags = Php::Public) = delete;
     void property(const char *name, char value, int flags = Php::Public);
     void property(const char *name, const std::string &value, int flags = Php::Public);
     void property(const char *name, const char *value, int flags = Php::Public);

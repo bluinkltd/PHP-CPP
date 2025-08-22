@@ -85,6 +85,12 @@ public:
 
 private:
     /**
+     *  The original path
+     *  @var struct _zend_string*
+     */
+    struct _zend_string *_original = nullptr;
+
+    /**
      *  The full resolved path name
      *  @var struct _zend_string*
      */

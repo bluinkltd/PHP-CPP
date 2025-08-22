@@ -1,16 +1,15 @@
 CPP             = g++
 RM              = rm -f
 CPP_FLAGS       = -Wall -c -I. -O2 -std=c++11
-
 PHP_CONFIG      = $(shell which php-config)
 LIBRARY_DIR		= $(shell ${PHP_CONFIG} --extension-dir)
 PHP_CONFIG_DIR	= $(shell ${PHP_CONFIG} --ini-dir)
 
 LD              = g++
 LD_FLAGS        = -Wall -shared -O2 
-RESULT          = functionvoid.so
+RESULT          = includeonce.so
 
-PHPINIFILE		= 30-functionvoid.ini
+PHPINIFILE		= 30-includeonce.ini
 
 SOURCES			= $(wildcard *.cpp)
 OBJECTS         = $(SOURCES:%.cpp=%.o)
